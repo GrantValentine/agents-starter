@@ -1,5 +1,5 @@
 // via https://github.com/vercel/ai/blob/main/examples/next-openai/app/api/use-chat-human-in-the-loop/utils.ts
-
+import type { Env } from "./server";
 import type {
   UIMessage,
   UIMessageStreamWriter,
@@ -22,15 +22,17 @@ function isValidToolName<K extends PropertyKey, T extends object>(
 export async function processToolCalls<Tools extends ToolSet>({
   dataStream,
   messages,
+  env,
   executions
 }: {
-  tools: Tools; // used for type inference
+  tools: Tools; // used for type inference (passed in from server.ts)
   dataStream: UIMessageStreamWriter;
   messages: UIMessage[];
+  env: Env;
   executions: Record<
     string,
-    // biome-ignore lint/suspicious/noExplicitAny: needs a better type
-    (args: any, context: ToolCallOptions) => Promise<unknown>
+    // args = inputs, context = tool call context + env
+    (args: any, context: ToolCallOptions & { env: Env }) => Promise<unknown>
   >;
 }): Promise<UIMessage[]> {
   // Process all messages, not just the last one
@@ -49,9 +51,10 @@ export async function processToolCalls<Tools extends ToolSet>({
             ""
           ) as keyof typeof executions;
 
-          // Only process tools that require confirmation (are in executions object) and are in 'input-available' state
-          if (!(toolName in executions) || part.state !== "output-available")
+          // Only process tools that are in 'executions' and have an approval decision
+          if (!(toolName in executions) || part.state !== "output-available") {
             return part;
+          }
 
           let result: unknown;
 
@@ -64,6 +67,7 @@ export async function processToolCalls<Tools extends ToolSet>({
             const toolInstance = executions[toolName];
             if (toolInstance) {
               result = await toolInstance(part.input, {
+                env, // 👈 pass Env through so executions can use env.DB
                 messages: convertToModelMessages(messages),
                 toolCallId: part.toolCallId
               });

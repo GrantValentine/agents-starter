@@ -24,5 +24,14 @@
       "tag": "v1",
       "new_sqlite_classes": ["Chat"]
     }
+  ],
+  // ...existing config...
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "nov18_treasury_securities",
+      "database_id": "fdc2dc16-e814-46d4-8509-87d165fac4bb"
+    }
   ]
+  
 }

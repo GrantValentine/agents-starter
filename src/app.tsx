@@ -29,7 +29,10 @@ import {
 // List of tools that require human confirmation
 // NOTE: this should match the tools that don't have execute functions in tools.ts
 const toolsRequiringConfirmation: (keyof typeof tools)[] = [
-  "getWeatherInformation"
+  "fitNssCurve",
+  "analyzeBondsWithNss",
+  "analyzeCusipWithNss",
+  "calculateTreasuryAnalytics" // 👈 bond tool requires confirmation
 ];
 
 export default function Chat() {
@@ -124,7 +127,6 @@ export default function Chat() {
       (part) =>
         isToolUIPart(part) &&
         part.state === "input-available" &&
-        // Manual check inside the component
         toolsRequiringConfirmation.includes(
           part.type.replace("tool-", "") as keyof typeof tools
         )
@@ -139,6 +141,7 @@ export default function Chat() {
     <div className="h-[100vh] w-full p-4 flex justify-center items-center bg-fixed overflow-hidden">
       <HasOpenAIKey />
       <div className="h-[calc(100vh-2rem)] w-full mx-auto max-w-lg flex flex-col shadow-xl rounded-md overflow-hidden relative border border-neutral-300 dark:border-neutral-800">
+        {/* Header */}
         <div className="px-4 py-3 border-b border-neutral-300 dark:border-neutral-800 flex items-center gap-3 sticky top-0 z-10">
           <div className="flex items-center justify-center h-8 w-8">
             <svg
@@ -159,7 +162,11 @@ export default function Chat() {
           </div>
 
           <div className="flex-1">
-            <h2 className="font-semibold text-base">AI Chat Agent</h2>
+            <h2 className="font-semibold text-base">Treasury Bond Assistant</h2>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              Analyze U.S. Treasuries by CUSIP: clean price, accrued interest,
+              dirty price, and the time offset <code>f</code>.
+            </p>
           </div>
 
           <div className="flex items-center gap-2 mr-2">
@@ -201,19 +208,34 @@ export default function Chat() {
                   <div className="bg-[#F48120]/10 text-[#F48120] rounded-full p-3 inline-flex">
                     <Robot size={24} />
                   </div>
-                  <h3 className="font-semibold text-lg">Welcome to AI Chat</h3>
+                  <h3 className="font-semibold text-lg">
+                    Welcome to the Bond Lab
+                  </h3>
                   <p className="text-muted-foreground text-sm">
-                    Start a conversation with your AI assistant. Try asking
-                    about:
+                    This assistant is tuned for U.S. Treasury securities. Paste
+                    a CUSIP or ask about bond pricing to get started.
                   </p>
                   <ul className="text-sm text-left space-y-2">
                     <li className="flex items-center gap-2">
                       <span className="text-[#F48120]">•</span>
-                      <span>Weather information for any city</span>
+                      <span>
+                        Type a CUSIP like <code>912810UP1</code> to pull Nov 18,
+                        2025 prices from D1.
+                      </span>
                     </li>
                     <li className="flex items-center gap-2">
                       <span className="text-[#F48120]">•</span>
-                      <span>Local time in different locations</span>
+                      <span>
+                        Compute clean price, accrued interest, dirty price, and{" "}
+                        <code>f</code> for notes and bonds.
+                      </span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-[#F48120]">•</span>
+                      <span>
+                        Ask conceptual questions about coupon dates, settlement,
+                        or day-count conventions.
+                      </span>
                     </li>
                   </ul>
                 </div>
@@ -359,7 +381,7 @@ export default function Chat() {
                 placeholder={
                   pendingToolCallConfirmation
                     ? "Please respond to the tool confirmation above..."
-                    : "Send a message..."
+                    : "Ask a question about a bond or paste a CUSIP..."
                 }
                 className="flex w-full border border-neutral-200 dark:border-neutral-700 px-3 py-2  ring-offset-background placeholder:text-neutral-500 dark:placeholder:text-neutral-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300 dark:focus-visible:ring-neutral-700 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base pb-10 dark:bg-neutral-900"
                 value={agentInput}
